@@ -17,7 +17,7 @@ async function submit() {
   error.value = ''
   submitting.value = true
   try {
-    await auth.login(username.value.trim(), password.value)
+    await auth.login(username.value, password.value)
     await router.push('/')
   } catch (reason: unknown) {
     error.value = (reason as { response?: unknown }).response ? t('authError') : t('networkError')

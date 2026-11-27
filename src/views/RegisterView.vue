@@ -24,19 +24,13 @@ async function checkStatus() {
 
 async function submit() {
   error.value = ''
-  const byteLength = new TextEncoder().encode(password.value).length
-  const nameLength = Array.from(username.value.trim()).length
-  if (nameLength < 2 || nameLength > 64 || byteLength < 10 || byteLength > 72) {
-    error.value = t('credentials')
-    return
-  }
   if (password.value !== confirmation.value) {
     error.value = t('passwordMismatch')
     return
   }
   submitting.value = true
   try {
-    await auth.register(username.value.trim(), password.value)
+    await auth.register(username.value, password.value)
     await router.push('/')
   } catch {
     error.value = t('registerError')
@@ -58,7 +52,7 @@ onMounted(checkStatus)
       <div class="auth-aside-meta"><i class="fa-solid fa-shield-halved" />{{ t('setupFirstOnly') }}</div>
     </div>
     <form class="auth-form" @submit.prevent="submit">
-      <div class="auth-form-head"><div class="eyebrow"><span class="eyebrow-dot" />{{ t('register') }}</div><h2>{{ t('setupTitle') }}</h2><p>{{ t('credentials') }}</p></div>
+      <div class="auth-form-head"><div class="eyebrow"><span class="eyebrow-dot" />{{ t('register') }}</div><h2>{{ t('setupTitle') }}</h2></div>
       <div v-if="!available" class="notice notice-warn register-notice"><i class="fa-solid fa-circle-info" />{{ t('setupFirstOnly') }} <RouterLink to="/login">{{ t('signIn') }}</RouterLink></div>
       <label class="form-field"><span>{{ t('username') }}</span><div class="input-wrap"><i class="fa-regular fa-user" /><input v-model="username" autocomplete="username" required autofocus :placeholder="t('username')" /></div></label>
       <label class="form-field"><span>{{ t('password') }}</span><div class="input-wrap"><i class="fa-solid fa-lock" /><input v-model="password" type="password" autocomplete="new-password" required :placeholder="t('password')" /></div></label>
