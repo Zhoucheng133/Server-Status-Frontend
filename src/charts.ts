@@ -32,7 +32,7 @@ export function treemap(countries: CountryCount[]): Rectangle[] {
   return result
 }
 
-const interval = 300_000
+export const historyIntervalMs = 5 * 60_000
 const bucketCount = 288
 
 export interface ChartBucket {
@@ -43,15 +43,15 @@ export interface ChartBucket {
 }
 
 export function historyChart(points: { time: string; value: number }[], end: number, fillZero: boolean, minimumMax = 1) {
-  const lastBucket = Math.floor(end / interval) * interval
-  const start = lastBucket - (bucketCount - 1) * interval
-  const values = new Map(points.map(point => [Math.floor(Date.parse(point.time) / interval) * interval, point.value]))
+  const lastBucket = Math.floor(end / historyIntervalMs) * historyIntervalMs
+  const start = lastBucket - (bucketCount - 1) * historyIntervalMs
+  const values = new Map(points.map(point => [Math.floor(Date.parse(point.time) / historyIntervalMs) * historyIntervalMs, point.value]))
   const max = Math.max(minimumMax, ...values.values())
   const buckets: ChartBucket[] = []
   const segments: ChartBucket[][] = []
   let segment: ChartBucket[] = []
   for (let i = 0; i < bucketCount; i++) {
-    const time = start + interval * i
+    const time = start + historyIntervalMs * i
     const value = values.get(time) ?? (fillZero ? 0 : undefined)
     const bucket = { time, value, x: 8 + 744 * i / (bucketCount - 1), y: value === undefined ? undefined : 176 - 164 * value / max }
     buckets.push(bucket)

@@ -3,7 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import api, { type RecentIP, type MetricPoint, type Overview } from '../api'
-import { historyChart, treemap } from '../charts'
+import { historyChart, historyIntervalMs, treemap } from '../charts'
 import HistoryPlot from '../components/HistoryPlot.vue'
 import { useAuthStore } from '../stores/auth'
 
@@ -76,6 +76,20 @@ function formatTimestamp(value: string) {
 }
 
 const currentMetric = computed(() => live.value ?? latest.value)
+const cardTime = computed(() => {
+  const sample = currentMetric.value
+  if (!sample) return ''
+  // Historical timestamps mark the start of the five-minute averaging window.
+  const end = Date.parse(sample.timestamp) + (live.value ? 0 : historyIntervalMs)
+  if (!Number.isFinite(end)) return ''
+  return new Intl.DateTimeFormat(locale.value, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(end)
+})
+const cardCaption = computed(() => {
+  if (live.value) return t('live')
+  if (cardTime.value) return t('lastUpdated', { time: cardTime.value })
+  return t(loading.value ? 'loading' : 'noData')
+})
+
 const cardReadings = computed(() => {
   const sample = currentMetric.value
   return {
@@ -90,7 +104,7 @@ function iconHint(metric: keyof typeof cardReadings.value) {
   const sample = currentMetric.value
   if (!sample) return t('noData')
   const unit = metric === 'cpu' || metric === 'memory' ? '%' : ''
-  return [t(metric), cardReadings.value[metric] + unit, formatTimestamp(sample.timestamp)].join(' · ')
+  return [t(metric), cardReadings.value[metric] + unit, cardTime.value].filter(Boolean).join(' · ')
 }
 
 async function loadOverview() {
@@ -244,30 +258,26 @@ onBeforeUnmount(() => {
 
   <section class="metric-grid" :aria-label="t('overview')">
     <article class="metric-card metric-cpu">
-      <div class="metric-top"><span class="metric-icon" role="img" tabindex="0" :aria-label="iconHint('cpu')"><i class="fa-solid fa-microchip" aria-hidden="true" /><span class="metric-hint" aria-hidden="true">{{ iconHint('cpu') }}</span></span><span class="metric-caption">{{ live ? t('live') : t('overview') }}</span></div>
+      <div class="metric-top"><span class="metric-icon" role="img" tabindex="0" :aria-label="iconHint('cpu')"><i class="fa-solid fa-microchip" aria-hidden="true" /><span class="metric-hint" aria-hidden="true">{{ iconHint('cpu') }}</span></span><span class="metric-caption">{{ cardCaption }}</span></div>
       <div class="metric-label">{{ t('cpu') }}</div>
       <div class="metric-value">{{ cardReadings.cpu ?? '—' }}<span>%</span></div>
-      <div class="metric-foot"><span class="status-dot" :class="auth.authenticated && live ? 'dot-green' : 'dot-muted'" />{{ auth.authenticated && live ? t('liveOn') : auth.authenticated ? t('loading') : t('liveOff') }}</div>
       <div class="metric-track"><span :style="{ width: `${Math.min(100, live?.cpu_percent ?? latest?.cpu_percent ?? 0)}%` }" /></div>
     </article>
     <article class="metric-card metric-memory">
-      <div class="metric-top"><span class="metric-icon" role="img" tabindex="0" :aria-label="iconHint('memory')"><i class="fa-solid fa-memory" aria-hidden="true" /><span class="metric-hint" aria-hidden="true">{{ iconHint('memory') }}</span></span><span class="metric-caption">{{ live ? t('live') : t('last24') }}</span></div>
+      <div class="metric-top"><span class="metric-icon" role="img" tabindex="0" :aria-label="iconHint('memory')"><i class="fa-solid fa-memory" aria-hidden="true" /><span class="metric-hint" aria-hidden="true">{{ iconHint('memory') }}</span></span><span class="metric-caption">{{ cardCaption }}</span></div>
       <div class="metric-label">{{ t('memory') }}</div>
       <div class="metric-value">{{ cardReadings.memory ?? '—' }}<span>%</span></div>
-      <div class="metric-foot">{{ live ? t('live') : t('overview') }}</div>
       <div class="metric-track"><span :style="{ width: `${Math.min(100, live?.memory_percent ?? latest?.memory_percent ?? 0)}%` }" /></div>
     </article>
     <article class="metric-card metric-network-in">
-      <div class="metric-top"><span class="metric-icon" role="img" tabindex="0" :aria-label="iconHint('inbound')"><i class="fa-solid fa-arrow-down" aria-hidden="true" /><span class="metric-hint" aria-hidden="true">{{ iconHint('inbound') }}</span></span><span class="metric-caption">{{ live ? t('live') : t('last24') }}</span></div>
+      <div class="metric-top"><span class="metric-icon" role="img" tabindex="0" :aria-label="iconHint('inbound')"><i class="fa-solid fa-arrow-down" aria-hidden="true" /><span class="metric-hint" aria-hidden="true">{{ iconHint('inbound') }}</span></span><span class="metric-caption">{{ cardCaption }}</span></div>
       <div class="metric-label">{{ t('inbound') }}</div>
       <div class="metric-value metric-bandwidth">{{ cardReadings.inbound ?? '—' }}</div>
-      <div class="metric-foot">{{ live ? t('liveOn') : t('overview') }}</div>
     </article>
     <article class="metric-card metric-network-out">
-      <div class="metric-top"><span class="metric-icon" role="img" tabindex="0" :aria-label="iconHint('outbound')"><i class="fa-solid fa-arrow-up" aria-hidden="true" /><span class="metric-hint" aria-hidden="true">{{ iconHint('outbound') }}</span></span><span class="metric-caption">{{ live ? t('live') : t('last24') }}</span></div>
+      <div class="metric-top"><span class="metric-icon" role="img" tabindex="0" :aria-label="iconHint('outbound')"><i class="fa-solid fa-arrow-up" aria-hidden="true" /><span class="metric-hint" aria-hidden="true">{{ iconHint('outbound') }}</span></span><span class="metric-caption">{{ cardCaption }}</span></div>
       <div class="metric-label">{{ t('outbound') }}</div>
       <div class="metric-value metric-bandwidth">{{ cardReadings.outbound ?? '—' }}</div>
-      <div class="metric-foot">{{ live ? t('liveOn') : t('overview') }}</div>
     </article>
   </section>
 
