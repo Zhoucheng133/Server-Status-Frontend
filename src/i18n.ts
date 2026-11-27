@@ -2,6 +2,7 @@ import { createI18n } from 'vue-i18n'
 
 const messages = {
   zh: {
+    auto: '自动', themeSwitch: '当前为{current}模式，点击切换到{next}模式',
     private: '仅管理员可见', lastSeen: '最近访问时段',
     site: '站点', allSites: '全部站点', privateNetwork: '私有网络', credentials: '用户名需为 2 至 64 个字符，密码需为 10 至 72 个 UTF-8 字节。',
     app: '服务器监控', dashboard: '概览', signIn: '登录', signOut: '退出登录', register: '创建管理员',
@@ -12,6 +13,7 @@ const messages = {
     username: '用户名', password: '密码', confirmPassword: '确认密码', enter: '登录', createAccount: '创建账户', noLogs: '尚未配置日志来源', loading: '正在加载', noData: '暂无数据', last24: '最近 24 小时', refresh: '更新', configured: '已配置', notConfigured: '需要配置日志来源', saveError: '保存失败，请重试。', authError: '用户名或密码无效。', registerError: '无法创建账户，请检查填写内容。', passwordMismatch: '两次输入的密码不一致。', networkError: '暂时无法连接服务器。', settings: '设置', language: '语言', theme: '主题', dark: '深色', light: '浅色', unknown: '未知', perMinute: '次 / 5 分钟', noSources: '没有发现 JSON 日志文件。', backHome: '返回首页', setupFirstOnly: '系统仅允许创建一个管理员账户。',
   },
   en: {
+    auto: 'Automatic', themeSwitch: 'Current theme is {current}. Switch to {next}.',
     private: 'Admin only', lastSeen: 'Latest interval',
     site: 'Website', allSites: 'All websites', privateNetwork: 'Private network', credentials: 'Use a 2–64 character username and a 10–72 byte UTF-8 password.',
     app: 'Server Monitor', dashboard: 'Overview', signIn: 'Sign in', signOut: 'Sign out', register: 'Create admin',

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from './stores/auth'
@@ -8,12 +8,17 @@ const { t, locale } = useI18n()
 const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
-const theme = localStorage.getItem('theme')
-const dark = ref(theme ? theme === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches)
+type ThemeMode = 'auto' | 'light' | 'dark'
+const savedTheme = localStorage.getItem('theme')
+const theme = ref<ThemeMode>(savedTheme === 'light' || savedTheme === 'dark' ? savedTheme : 'auto')
+const systemDark = window.matchMedia('(prefers-color-scheme: dark)')
+const nextTheme = { auto: 'light', light: 'dark', dark: 'auto' } as const
+const themeIcon = { auto: 'fa-desktop', light: 'fa-sun', dark: 'fa-moon' }
+const themeHint = computed(() => t('themeSwitch', { current: t(theme.value), next: t(nextTheme[theme.value]) }))
 
 function applyTheme() {
-  document.documentElement.dataset.theme = dark.value ? 'dark' : 'light'
-  localStorage.setItem('theme', dark.value ? 'dark' : 'light')
+  const mode = theme.value
+  document.documentElement.dataset.theme = mode === 'auto' ? (systemDark.matches ? 'dark' : 'light') : mode
 }
 
 function toggleLanguage() {
@@ -22,8 +27,8 @@ function toggleLanguage() {
 }
 
 function toggleTheme() {
-  dark.value = !dark.value
-  applyTheme()
+  theme.value = nextTheme[theme.value]
+  localStorage.setItem('theme', theme.value)
 }
 
 async function signOut() {
@@ -32,12 +37,14 @@ async function signOut() {
 
 watch(() => route.path, () => window.scrollTo({ top: 0, behavior: 'smooth' }))
 watch(locale, language => { document.documentElement.lang = language === 'zh' ? 'zh-CN' : 'en' }, { immediate: true })
+watch(theme, applyTheme, { immediate: true })
 onMounted(async () => {
-  applyTheme()
+  systemDark.addEventListener('change', applyTheme)
   if (auth.authenticated) {
     try { await auth.loadUser() } catch { /* The HTTP client clears expired sessions after a rejected refresh. */ }
   }
 })
+onBeforeUnmount(() => systemDark.removeEventListener('change', applyTheme))
 </script>
 
 <template>
@@ -51,8 +58,8 @@ onMounted(async () => {
         <button class="utility-button" type="button" :aria-label="t('language')" @click="toggleLanguage">
           <i class="fa-solid fa-globe" /><span>{{ locale === 'zh' ? 'EN' : '中文' }}</span>
         </button>
-        <button class="icon-button" type="button" :aria-label="dark ? t('light') : t('dark')" @click="toggleTheme">
-          <i :class="dark ? 'fa-solid fa-sun' : 'fa-solid fa-moon'" />
+        <button class="icon-button" type="button" :aria-label="themeHint" :title="themeHint" @click="toggleTheme">
+          <i class="fa-solid" :class="themeIcon[theme]" aria-hidden="true" />
         </button>
         <template v-if="auth.authenticated">
           <span class="user-label"><span class="user-dot" />{{ auth.user?.username }}</span>
